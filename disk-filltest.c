@@ -27,7 +27,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#define VERSION "0.8.2"
+#define VERSION "0.8.3"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -71,6 +71,9 @@ unsigned int gopt_file_limit = UINT_MAX;
 
 /* number of repetitions */
 int gopt_repeat = 1;
+
+/* delay in seconds after each file (except the last) */
+int gopt_delay = 0;
 
 /* size of last file written */
 unsigned int g_last_filesize = UINT_MAX;
@@ -161,7 +164,7 @@ void format_time(unsigned int sec, char output[64])
 void print_usage(char* argv[])
 {
     fprintf(stderr,
-            "Usage: %s [-s seed] [-f files] [-S size] [-r] [-u] [-U] [-C dir]\n"
+            "Usage: %s [-s seed] [-f files] [-S size] [-r] [-u] [-U] [-C dir] [-t seconds]\n"
             "\n"
             "disk-filltest " VERSION " is a simple program which fills a path with random\n"
             "data and then rereads the files to check that the random sequence was\n"
@@ -175,6 +178,7 @@ void print_usage(char* argv[])
             "  -R <times>        Repeat fill/test/wipe steps given number of times.\n"
             "  -s <random seed>  Use random seed to write or verify data files.\n"
             "  -S <size>         Size of each random file in MiB (default: 1024).\n"
+            "  -t <seconds>      Delay in seconds after each file (except the last).\n"
             "  -u                Remove files after successful test.\n"
             "  -U                Immediately remove files, write and verify via file handles.\n"
             "  -V                Print version and exit.\n"
@@ -188,7 +192,7 @@ void parse_commandline(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "hs:S:f:ruUC:NR:V")) != -1) {
+    while ((opt = getopt(argc, argv, "hs:S:f:ruUC:NR:Vt:")) != -1) {
         switch (opt) {
         case 's':
             g_seed = atoi(optarg);
@@ -223,6 +227,9 @@ void parse_commandline(int argc, char* argv[])
 	case 'V':
 	    printf("disk-filltest " VERSION "\n");
             exit(EXIT_SUCCESS);
+        case 't':
+            gopt_delay = atoi(optarg);
+            break;
         case 'h':
         default:
             print_usage(argv);
@@ -371,6 +378,12 @@ void write_randfiles(void)
                    (wtotal / 1024.0 / 1024.0), filename, speed);
         }
         fflush(stdout);
+
+        /* add delay after each file (except the last) if requested */
+        if (gopt_delay > 0 && gopt_file_limit > 1 && filenum < gopt_file_limit) {
+            printf("Sleeping for %d seconds...\n", gopt_delay);
+            sleep(gopt_delay);
+        }
     }
 
     errno = 0;

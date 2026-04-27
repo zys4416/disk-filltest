@@ -666,6 +666,7 @@ void write_randfiles(void)
         /* add delay after each file (except the last) if requested */
         if (gopt_delay > 0 && gopt_file_limit > 1 && filenum < gopt_file_limit) {
             printf("Sleeping for %d seconds...\n", gopt_delay);
+            fflush(stdout);
             sleep(gopt_delay);
         }
     }

@@ -534,10 +534,12 @@ void parse_commandline(int argc, char* argv[])
         gopt_file_size = 1024;
 }
 
-/* unlink old random files */
-void unlink_randfiles(void)
+/* unlink random files; label describes what is being removed (e.g. "old
+ * files" before a run, "test files" after a successful run). */
+void unlink_randfiles(const char* label)
 {
     unsigned int filenum = 0;
+    int is_tty = isatty(fileno(stdout));
 
     while (filenum < UINT_MAX)
     {
@@ -547,17 +549,20 @@ void unlink_randfiles(void)
         if (unlink(filename) != 0)
             break;
 
-        if (filenum == 0)
-            printf("Removing old files .");
-        else
-            printf(".");
-        fflush(stdout);
-
         ++filenum;
+
+        if (is_tty) {
+            printf("\rRemoving %s: %u", label, filenum);
+            fflush(stdout);
+        }
     }
 
-    if (filenum > 0)
-        printf(" total: %u.\n", filenum);
+    if (filenum > 0) {
+        if (is_tty)
+            printf("\rRemoving %s: %u, done.\n", label, filenum);
+        else
+            printf("Removed %s: %u.\n", label, filenum);
+    }
 }
 
 /* fill disk */
@@ -835,16 +840,16 @@ int main(int argc, char* argv[])
         {
             read_randfiles();
             if (gopt_unlink_after)
-                unlink_randfiles();
+                unlink_randfiles("test files");
         }
         else
         {
-            unlink_randfiles();
+            unlink_randfiles("old files");
             write_randfiles();
             if (!gopt_skip_verify)
                 read_randfiles();
             if (gopt_unlink_after)
-                unlink_randfiles();
+                unlink_randfiles("test files");
         }
 
         if (gopt_repeat_delay > 0 && r + 1 < gopt_repeat) {

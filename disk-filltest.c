@@ -86,6 +86,9 @@ int gopt_repeat = 1;
 /* delay in seconds after each file (except the last) */
 int gopt_delay = 0;
 
+/* delay in seconds between -R repetitions (except after the last) */
+int gopt_repeat_delay = 0;
+
 /* size of last file written */
 unsigned int g_last_filesize = UINT_MAX;
 
@@ -448,7 +451,7 @@ void format_time(unsigned int sec, char output[64])
 void print_usage(char* argv[])
 {
     fprintf(stderr,
-            "Usage: %s [-s seed] [-f files] [-S size] [-r] [-u] [-U] [-C dir] [-t seconds]\n"
+            "Usage: %s [-s seed] [-f files] [-S size] [-r] [-u] [-U] [-C dir] [-t seconds] [-T seconds]\n"
             "\n"
             "disk-filltest " VERSION " is a simple program which fills a path with random\n"
             "data and then rereads the files to check that the random sequence was\n"
@@ -463,6 +466,7 @@ void print_usage(char* argv[])
             "  -s <random seed>  Use random seed to write or verify data files.\n"
             "  -S <size>         Size of each random file in MiB (default: 1024).\n"
             "  -t <seconds>      Delay in seconds after each file (except the last).\n"
+            "  -T <seconds>      Delay in seconds between -R repetitions (except after the last).\n"
             "  -u                Remove files after successful test.\n"
             "  -U                Immediately remove files, write and verify via file handles.\n"
             "  -V                Print version and exit.\n"
@@ -476,7 +480,7 @@ void parse_commandline(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "hs:S:f:ruUC:NR:Vt:")) != -1) {
+    while ((opt = getopt(argc, argv, "hs:S:f:ruUC:NR:Vt:T:")) != -1) {
         switch (opt) {
         case 's':
             g_seed = atoi(optarg);
@@ -513,6 +517,9 @@ void parse_commandline(int argc, char* argv[])
             exit(EXIT_SUCCESS);
         case 't':
             gopt_delay = atoi(optarg);
+            break;
+        case 'T':
+            gopt_repeat_delay = atoi(optarg);
             break;
         case 'h':
         default:
@@ -838,6 +845,13 @@ int main(int argc, char* argv[])
                 read_randfiles();
             if (gopt_unlink_after)
                 unlink_randfiles();
+        }
+
+        if (gopt_repeat_delay > 0 && r + 1 < gopt_repeat) {
+            printf("Sleeping for %d seconds before next repetition...\n",
+                   gopt_repeat_delay);
+            fflush(stdout);
+            sleep(gopt_repeat_delay);
         }
     }
 

@@ -27,7 +27,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-#define VERSION "0.8.3b"
+#define VERSION "0.8.4"
 
 #include <errno.h>
 #include <fcntl.h>

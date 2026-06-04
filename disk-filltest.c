@@ -744,6 +744,10 @@ void read_randfiles(void)
         }
         else
         {
+            /* all files counted during the initial scan have been verified */
+            if (filenum >= expected_file_limit)
+                break;
+
             fd = open(filename, O_RDONLY | O_BINARY);
             if (fd < 0) {
                 printf("Error opening next file %s: %s\n",
